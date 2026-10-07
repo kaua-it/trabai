@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Boletim Escolar Automatizado</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+ --bg:#080b14;
+ --card:#101624;
+ --card2:#151d2d;
+ --blue:#3776ab;
+ --light:#69b5ef;
+ --yellow:#ffd343;
+ --green:#35d07f;
+ --orange:#ffad42;
+ --red:#ff5c6c;
+ --text:#f4f7fb;
+ --muted:#9ba8ba;
+}
+
+body{
+ font-family:Arial,Helvetica,sans-serif;
+ background:var(--bg);
+ color:var(--text);
+ overflow:hidden;
+}
+
+body:before{
+ content:"";
+ position:fixed;
+ inset:0;
+ background:
+ radial-gradient(circle at 15% 20%,rgba(55,118,171,.16),transparent 30%),
+ radial-gradient(circle at 85% 80%,rgba(255,211,67,.07),transparent 28%);
+ pointer-events:none;
+}
+
+header{
+ position:fixed;
+ top:0;
+ left:0;
+ right:0;
+ height:65px;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ padding:0 28px;
+ background:rgba(8,11,20,.88);
+ backdrop-filter:blur(12px);
+ border-bottom:1px solid #202a3c;
+ z-index:20;
+}
+
+.logo{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ font-weight:bold;
+}
+
+.python{
+ width:30px;
+ height:30px;
+ border-radius:8px;
+ background:var(--blue);
+ display:grid;
+ place-items:center;
+ color:white;
+ font-weight:bold;
+}
+
+.counter{
+ color:var(--muted);
+ font-size:14px;
+}
+
+.progress{
+ position:fixed;
+ top:65px;
+ left:0;
+ height:3px;
+ background:var(--blue);
+ z-index:30;
+ transition:.3s;
+}
+
+.slides{
+ width:100vw;
+ height:100vh;
+}
+
+.slide{
+ position:absolute;
+ inset:0;
+ padding:100px 8% 90px;
+ display:flex;
+ flex-direction:column;
+ justify-content:center;
+ opacity:0;
+ transform:translateX(40px);
+ pointer-events:none;
+ transition:.45s ease;
+ overflow-y:auto;
+}
+
+.slide.active{
+ opacity:1;
+ transform:translateX(0);
+ pointer-events:auto;
+}
+
+.tag{
+ display:inline-block;
+ color:var(--light);
+ font-size:13px;
+ font-weight:bold;
+ letter-spacing:2px;
+ text-transform:uppercase;
+ margin-bottom:16px;
+}
+
+h1{
+ font-size:clamp(42px,7vw,82px);
+ line-height:1;
+ max-width:950px;
+ margin-bottom:24px;
+}
+
+h2{
+ font-size:clamp(32px,5vw,58px);
+ margin-bottom:20px;
+}
+
+h3{
+ font-size:21px;
+ margin-bottom:10px;
+}
+
+p{
+ color:var(--muted);
+ font-size:18px;
+ line-height:1.65;
+ max-width:850px;
+}
+
+.highlight{color:var(--yellow)}
+.blue{color:var(--light)}
+.green{color:var(--green)}
+.orange{color:var(--orange)}
+.red{color:var(--red)}
+
+.grid{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:18px;
+ max-width:1000px;
+}
+
+.grid3{
+ display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:16px;
+ max-width:1050px;
+}
+
+.card{
+ background:rgba(16,22,36,.92);
+ border:1px solid #263247;
+ border-radius:16px;
+ padding:22px;
+ box-shadow:0 15px 40px rgba(0,0,0,.2);
+}
+
+.card p{
+ font-size:15px;
+}
+
+.icon{
+ font-size:28px;
+ margin-bottom:12px;
+}
+
+.flow{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ flex-wrap:wrap;
+ margin-top:25px;
+}
+
+.step{
+ padding:14px 18px;
+ border:1px solid #304057;
+ background:var(--card);
+ border-radius:10px;
+ font-weight:bold;
+}
+
+.arrow{
+ color:var(--yellow);
+ font-size:22px;
+}
+
+.code{
+ background:#05070d;
+ border:1px solid #263247;
+ border-radius:14px;
+ padding:20px;
+ font-family:"Courier New",monospace;
+ font-size:15px;
+ line-height:1.65;
+ color:#dce5f0;
+ max-width:900px;
+ overflow:auto;
+}
+
+.kw{color:#c586c0}
+.fn{color:#69b5ef}
+.num{color:#ffd343}
+.str{color:#98d982}
+.comment{color:#65738a}
+
+.data{
+ border-collapse:collapse;
+ margin-top:18px;
+ max-width:850px;
+ width:100%;
+ background:var(--card);
+ border-radius:12px;
+ overflow:hidden;
+}
+
+.data th,.data td{
+ padding:13px 16px;
+ border-bottom:1px solid #263247;
+ text-align:left;
+}
+
+.data th{
+ color:var(--light);
+ background:#141d2d;
+}
+
+.badge{
+ display:inline-block;
+ padding:6px 10px;
+ border-radius:7px;
+ font-size:12px;
+ font-weight:bold;
+}
+
+.ap{background:rgba(53,208,127,.15);color:var(--green)}
+.rec{background:rgba(255,173,66,.15);color:var(--orange)}
+.rep{background:rgba(255,92,108,.15);color:var(--red)}
+
+.terminal{
+ background:#05070d;
+ border:1px solid #263247;
+ border-radius:14px;
+ padding:20px;
+ font-family:monospace;
+ color:#dce5f0;
+ line-height:1.7;
+ max-width:850px;
+}
+
+.terminal .prompt{color:var(--green)}
+
+.nav{
+ position:fixed;
+ bottom:24px;
+ left:50%;
+ transform:translateX(-50%);
+ display:flex;
+ align-items:center;
+ gap:12px;
+ z-index:25;
+}
+
+.nav button{
+ width:44px;
+ height:44px;
+ border-radius:50%;
+ border:1px solid #304057;
+ background:#101624;
+ color:white;
+ cursor:pointer;
+ font-size:18px;
+ transition:.2s;
+}
+
+.nav button:hover{
+ background:var(--blue);
+ transform:scale(1.05);
+}
+
+.dots{
+ display:flex;
+ gap:6px;
+}
+
+.dot{
+ width:7px;
+ height:7px;
+ border-radius:50%;
+ background:#3a4558;
+ cursor:pointer;
+ transition:.2s;
+}
+
+.dot.active{
+ width:22px;
+ border-radius:10px;
+ background:var(--blue);
+}
+
+.download-btn{
+ position:fixed;
+ top:78px;
+ right:25px;
+ z-index:50;
+ border:1px solid #477fac;
+ background:var(--blue);
+ color:white;
+ padding:11px 16px;
+ border-radius:10px;
+ font-weight:bold;
+ cursor:pointer;
+ box-shadow:0 6px 20px rgba(0,0,0,.3);
+ transition:.2s;
+}
+
+.download-btn:hover{
+ background:#2d6a99;
+ transform:translateY(-2px);
+}
+
+.download-btn:active{
+ transform:scale(.96);
+}
+
+.big-python{
+ font-size:90px;
+ color:var(--yellow);
+ font-weight:bold;
+ margin-bottom:15px;
+}
+
+.subtitle{
+ font-size:21px;
+ color:var(--muted);
+}
+
+.number{
+ font-size:42px;
+ font-weight:bold;
+ color:var(--blue);
+ margin-bottom:8px;
+}
+
+footer{
+ position:fixed;
+ bottom:12px;
+ right:22px;
+ color:#526078;
+ font-size:11px;
+}
+
+@media(max-width:700px){
+ header{padding:0 15px}
+ .logo span{display:none}
+ .slide{padding:95px 22px 95px}
+ .grid,.grid3{grid-template-columns:1fr}
+ h1{font-size:45px}
+ h2{font-size:34px}
+ p{font-size:15px}
+ .code,.terminal{font-size:12px}
+ .download-btn{
+  top:74px;
+  right:12px;
+  padding:9px 12px;
+  font-size:11px;
+ }
+ .flow{gap:6px}
+ .step{padding:10px 12px;font-size:13px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+ <div class="logo">
+  <div class="python">Py</div>
+  <span>Boletim Escolar • Projeto de Programação</span>
+ </div>
+ <div class="counter" id="counter">01 / 12</div>
+</header>
+
+<div class="progress" id="progress"></div>
+
+<button class="download-btn" onclick="baixarSite()">
+ ⬇ Baixar apresentação
+</button>
+
+<main class="slides">
+
+<!-- 1 -->
+<section class="slide active">
+ <div class="big-python">Python</div>
+ <span class="tag">Projeto de programação</span>
+ <h1>Boletim Escolar<br><span class="highlight">Automatizado</span></h1>
+ <p class="subtitle">
+  Sistema para cadastro de alunos, cálculo de médias,
+  classificação da situação escolar e análise da turma.
+ </p>
+
+ <div class="flow">
+  <div class="step">Cadastrar</div>
+  <div class="arrow">→</div>
+  <div class="step">Calcular</div>
+  <div class="arrow">→</div>
+  <div class="step">Classificar</div>
+  <div class="arrow">→</div>
+  <div class="step">Analisar</div>
+ </div>
+</section>
+
+<!-- 2 -->
+<section class="slide">
+ <span class="tag">01 • Problema</span>
+ <h2>Qual problema o sistema resolve?</h2>
+ <div class="grid">
+  <div class="card">
+   <div class="icon">📋</div>
+   <h3>Controle manual</h3>
+   <p>
+    Calcular várias médias manualmente pode gerar erros
+    e tornar o acompanhamento da turma mais trabalhoso.
+   </p>
+  </div>
+
+  <div class="card">
+   <div class="icon">📊</div>
+   <h3>Falta de organização</h3>
+   <p>
+    As informações dos alunos precisam estar estruturadas
+    para facilitar consultas e análises.
+   </p>
+  </div>
+
+  <div class="card">
+   <div class="icon">⚡</div>
+   <h3>Automatização</h3>
+   <p>
+    O programa realiza cálculos e classificações
+    automaticamente a partir das notas cadastradas.
+   </p>
+  </div>
+
+  <div class="card">
+   <div class="icon">🎯</div>
+   <h3>Objetivo</h3>
+   <p>
+    Criar uma solução simples para organizar e analisar
+    os resultados escolares.
+   </p>
+  </div>
+ </div>
+</section>
+
+<!-- 3 -->
+<section class="slide">
+ <span class="tag">02 • Objetivo</span>
+ <h2>O que o programa faz?</h2>
+ <p>
+  O sistema recebe os dados dos alunos, armazena as notas,
+  calcula a média individual e determina a situação de cada estudante.
+ </p>
+
+ <div class="flow">
+  <div class="step">👤 Dados do aluno</div>
+  <div class="arrow">→</div>
+  <div class="step">📝 3 notas</div>
+  <div class="arrow">→</div>
+  <div class="step">🧮 Média</div>
+  <div class="arrow">→</div>
+  <div class="step">📌 Situação</div>
+ </div>
+
+ <div class="grid3" style="margin-top:28px">
+  <div class="card">
+   <div class="number">01</div>
+   <h3>Cadastrar</h3>
+   <p>Registrar nome e notas do aluno.</p>
+  </div>
+
+  <div class="card">
+   <div class="number">02</div>
+   <h3>Consultar</h3>
+   <p>Visualizar o boletim individual.</p>
+  </div>
+
+  <div class="card">
+   <div class="number">03</div>
+   <h3>Analisar</h3>
+   <p>Obter estatísticas da turma.</p>
+  </div>
+ </div>
+</section>
+
+<!-- 4 -->
+<section class="slide">
+ <span class="tag">03 • Programação</span>
+ <h2>Conceitos utilizados</h2>
+
+ <div class="grid3">
+  <div class="card">
+   <div class="icon">🐍</div>
+   <h3>Python</h3>
+   <p>Linguagem utilizada para desenvolver o sistema.</p>
+  </div>
+
+  <div class="card">
+   <div class="icon">🗃️</div>
+   <h3>Listas</h3>
+   <p>Estrutura utilizada para armazenar os dados.</p>
+  </div>
+
+  <div class="card">
+   <div class="icon">🔁</div>
+   <h3>Repetição</h3>
+   <p>Permite percorrer os alunos e realizar operações.</p>
+  </div>
+
+  <div class="card">
+   <div class="icon">🔀</div>
+   <h3>Condicionais</h3>
+   <p>Usadas para definir a situação do aluno.</p>
+  </div>
+
+  <div class="card">
+   <div class="icon">⚙️</div>
+   <h3>Funções</h3>
+   <p>Organizam as diferentes tarefas do programa.</p>
+  </div>
+
+  <div class="card">
+   <div class="icon">➗</div>
+   <h3>Operações</h3>
+   <p>Cálculos matemáticos para obter as médias.</p>
+  </div>
+ </div>
+</section>
+
+<!-- 5 -->
+<section class="slide">
+ <span class="tag">04 • Estrutura dos dados</span>
+ <h2>Como os alunos são armazenados?</h2>
+ <p>
+  O projeto utiliza uma <b class="blue">lista de listas</b>,
+  funcionando como uma estrutura semelhante a uma matriz.
+ </p>
+
+ <div class="code" style="margin-top:22px">
+alunos = [
+    [<span class="str">"Ana"</span>, <span class="num">8.5</span>, <span class="num">7.5</span>, <span class="num">9.0</span>],
+    [<span class="str">"João"</span>, <span class="num">6.0</span>, <span class="num">5.5</span>, <span class="num">7.0</span>],
+    [<span class="str">"Maria"</span>, <span class="num">4.0</span>, <span class="num">5.0</span>, <span class="num">4.5</span>]
+]
+ </div>
+
+ <table class="data">
+  <tr>
+   <th>Posição</th>
+   <th>Informação</th>
+  </tr>
+  <tr>
+   <td>[0]</td>
+   <td>Nome do aluno</td>
+  </tr>
+  <tr>
+   <td>[1]</td>
+   <td>Primeira nota</td>
+  </tr>
+  <tr>
+   <td>[2]</td>
+   <td>Segunda nota</td>
+  </tr>
+  <tr>
+   <td>[3]</td>
+   <td>Terceira nota</td>
+  </tr>
+ </table>
+</section>
+
+<!-- 6 -->
+<section class="slide">
+ <span class="tag">05 • Cadastro</span>
+ <h2>Cadastro dos alunos</h2>
+ <p>
+  Para cada aluno, o programa solicita o nome e três notas.
+  Esses dados são armazenados na estrutura de dados.
+ </p>
+
+ <div class="code" style="margin-top:22px">
+nome = input(<span class="str">"Nome do aluno: "</span>)
+
+nota1 = float(input(<span class="str">"Nota 1: "</span>))
+nota2 = float(input(<span class="str">"Nota 2: "</span>))
+nota3 = float(input(<span class="str">"Nota 3: "</span>))
+
+aluno = [nome, nota1, nota2, nota3]
+alunos.append(aluno)
+ </div>
+
+ <div class="flow">
+  <div class="step">Nome</div>
+  <div class="arrow">+</div>
+  <div class="step">Nota 1</div>
+  <div class="arrow">+</div>
+  <div class="step">Nota 2</div>
+  <div class="arrow">+</div>
+  <div class="step">Nota 3</div>
+  <div class="arrow">→</div>
+  <div class="step">Aluno cadastrado</div>
+ </div>
+</section>
+
+<!-- 7 -->
+<section class="slide">
+ <span class="tag">06 • Cálculo</span>
+ <h2>Cálculo da média</h2>
+ <p>
+  A média é calculada somando as três notas e dividindo
+  o resultado por três.
+ </p>
+
+ <div class="code" style="margin-top:24px">
+media = (nota1 + nota2 + nota3) / 3
+ </div>
+
+ <div class="grid3" style="margin-top:25px">
+  <div class="card">
+   <h3>Exemplo</h3>
+   <p>8 + 7 + 9</p>
+  </div>
+
+  <div class="card">
+   <h3>Soma</h3>
+   <p>24 pontos</p>
+  </div>
+
+  <div class="card">
+   <h3>Média</h3>
+   <p class="green"><b>24 ÷ 3 = 8,0</b></p>
+  </div>
+ </div>
+</section>
+
+<!-- 8 -->
+<section class="slide">
+ <span class="tag">07 • Condicionais</span>
+ <h2>Definição da situação</h2>
+ <p>
+  Depois de calcular a média, estruturas condicionais
+  determinam a situação do aluno.
+ </p>
+
+ <div class="code" style="margin-top:22px">
+<span class="kw">if</span> media &gt;= <span class="num">7</span>:
+    situacao = <span class="str">"APROVADO"</span>
+
+<span class="kw">elif</span> media &gt;= <span class="num">5</span>:
+    situacao = <span class="str">"RECUPERAÇÃO"</span>
+
+<span class="kw">else</span>:
+    situacao = <span class="str">"REPROVADO"</span>
+ </div>
+
+ <div class="flow">
+  <span class="badge ap">≥ 7 → APROVADO</span>
+  <span class="badge rec">5 até 6,9 → RECUPERAÇÃO</span>
+  <span class="badge rep">&lt; 5 → REPROVADO</span>
+ </div>
+</section>
+
+<!-- 9 -->
+<section class="slide">
+ <span class="tag">08 • Interface</span>
+ <h2>Menu principal</h2>
+ <p>
+  O menu organiza as funcionalidades do sistema e permite
+  que o usuário escolha qual operação deseja executar.
+ </p>
+
+ <div class="grid" style="margin-top:25px">
+  <div class="card">
+   <div class="number">1</div>
+   <h3>Cadastrar aluno</h3>
+   <p>Insere um novo aluno e suas notas.</p>
+  </div>
+
+  <div class="card">
+   <div class="number">2</div>
+   <h3>Boletim</h3>
+   <p>Exibe os dados, média e situação.</p>
+  </div>
+
+  <div class="card">
+   <div class="number">3</div>
+   <h3>Estatísticas</h3>
+   <p>Apresenta informações gerais da turma.</p>
+  </div>
+
+  <div class="card">
+   <div class="number">4</div>
+   <h3>Sair</h3>
+   <p>Encerra a execução do programa.</p>
+  </div>
+ </div>
+</section>
+
+<!-- 10 -->
+<section class="slide">
+ <span class="tag">09 • Estatísticas</span>
+ <h2>Análise da turma</h2>
+ <p>
+  Além do boletim individual, o programa pode analisar
+  os resultados de todos os alunos cadastrados.
+ </p>
+
+ <div class="grid3" style="margin-top:25px">
+  <div class="card">
+   <div class="icon">📈</div>
+   <h3>Média geral</h3>
+   <p>Calcula a média das médias dos alunos.</p>
+  </div>
+
+  <div class="card">
+   <div class="icon">🏆</div>
+   <h3>Maior média</h3>
+   <p>Identifica o maior resultado da turma.</p>
+  </div>
+
+  <div class="card">
+   <div class="icon">📉</div>
+   <h3>Menor média</h3>
+   <p>Identifica o menor resultado da turma.</p>
+  </div>
+
+  <div class="card">
+   <div class="icon">✅</div>
+   <h3>Aprovados</h3>
+   <p>Conta quantos alunos foram aprovados.</p>
+  </div>
+
+  <div class="card">
+   <div class="icon">⚠️</div>
+   <h3>Recuperação</h3>
+   <p>Conta quantos alunos precisam de recuperação.</p>
+  </div>
+
+  <div class="card">
+   <div class="icon">❌</div>
+   <h3>Reprovados</h3>
+   <p>Conta quantos alunos foram reprovados.</p>
+  </div>
+ </div>
+</section>
+
+<!-- 11 -->
+<section class="slide">
+ <span class="tag">10 • Demonstração</span>
+ <h2>Exemplo de execução</h2>
+
+ <div class="terminal">
+  <div><span class="prompt">$</span> python boletim.py</div>
+  <br>
+  <div>===== BOLETIM ESCOLAR =====</div>
+  <div>1 - Cadastrar aluno</div>
+  <div>2 - Boletim</div>
+  <div>3 - Estatísticas</div>
+  <div>4 - Sair</div>
+  <br>
+  <div>Escolha: 1</div>
+  <div>Nome do aluno: Ana</div>
+  <div>Nota 1: 8.5</div>
+  <div>Nota 2: 7.5</div>
+  <div>Nota 3: 9.0</div>
+  <br>
+  <div>Média: 8.33</div>
+  <div>Situação: <span class="green">APROVADO</span></div>
+ </div>
+
+ <p style="margin-top:22px">
+  O resultado é obtido automaticamente a partir das informações
+  fornecidas pelo usuário.
+ </p>
+</section>
+
+<!-- 12 -->
+<section class="slide">
+ <span class="tag">11 • Conclusão</span>
+ <h2>O que aprendemos?</h2>
+
+ <div class="grid">
+  <div class="card">
+   <h3>🧠 Lógica</h3>
+   <p>
+    Aplicação de decisões, cálculos e sequência lógica
+    para resolver um problema real.
+   </p>
+  </div>
+
+  <div class="card">
+   <h3>🗃️ Estrutura de dados</h3>
+   <p>
+    Uso de listas para organizar informações de vários alunos.
+   </p>
+  </div>
+
+  <div class="card">
+   <h3>🐍 Python</h3>
+   <p>
+    Utilização de conceitos fundamentais da linguagem
+    na construção de um sistema funcional.
+   </p>
+  </div>
+
+  <div class="card">
+   <h3>⚙️ Automatização</h3>
+   <p>
+    O programa reduz tarefas manuais e facilita
+    a análise dos resultados escolares.
+   </p>
+  </div>
+ </div>
+
+ <div style="margin-top:28px">
+  <p class="blue">
+   <b>Boletim Escolar Automatizado</b>
+   — um exemplo prático de aplicação da programação.
+  </p>
+ </div>
+</section>
+
+</main>
+
+<div class="nav">
+ <button onclick="prevSlide()">‹</button>
+
+ <div class="dots" id="dots"></div>
+
+ <button onclick="nextSlide()">›</button>
+</div>
+
+<footer>Use ← → ou deslize para navegar</footer>
+
+<script>
+let atual=0;
+
+const slides=document.querySelectorAll(".slide");
+const dots=document.getElementById("dots");
+const counter=document.getElementById("counter");
+const progress=document.getElementById("progress");
+
+slides.forEach((_,i)=>{
+ const d=document.createElement("div");
+ d.className="dot"+(i===0?" active":"");
+ d.onclick=()=>goTo(i);
+ dots.appendChild(d);
+});
+
+function goTo(n){
+ if(n<0)n=slides.length-1;
+ if(n>=slides.length)n=0;
+
+ slides[atual].classList.remove("active");
+ atual=n;
+ slides[atual].classList.add("active");
+
+ document.querySelectorAll(".dot").forEach((d,i)=>{
+  d.classList.toggle("active",i===atual);
+ });
+
+ counter.textContent=
+  String(atual+1).padStart(2,"0")+" / "+
+  String(slides.length).padStart(2,"0");
+
+ progress.style.width=
+  ((atual+1)/slides.length*100)+"%";
+}
+
+function nextSlide(){goTo(atual+1)}
+function prevSlide(){goTo(atual-1)}
+
+document.addEventListener("keydown",e=>{
+ if(e.key==="ArrowRight"||e.key===" "){
+  e.preventDefault();
+  nextSlide();
+ }
+
+ if(e.key==="ArrowLeft"){
+  e.preventDefault();
+  prevSlide();
+ }
+});
+
+/* Navegação por toque */
+let inicioX=0;
+
+document.addEventListener("touchstart",e=>{
+ inicioX=e.changedTouches[0].screenX;
+},{passive:true});
+
+document.addEventListener("touchend",e=>{
+ const fimX=e.changedTouches[0].screenX;
+ const distancia=fimX-inicioX;
+
+ if(Math.abs(distancia)>50){
+  if(distancia<0)nextSlide();
+  else prevSlide();
+ }
+},{passive:true});
+
+/* DOWNLOAD DO PRÓPRIO SITE */
+function baixarSite(){
+ const html="<!DOCTYPE html>\n"+document.documentElement.outerHTML;
+
+ const blob=new Blob(
+  [html],
+  {type:"text/html;charset=utf-8"}
+ );
+
+ const url=URL.createObjectURL(blob);
+ const link=document.createElement("a");
+
+ link.href=url;
+ link.download="Boletim-Escolar-Automatizado.html";
+
+ document.body.appendChild(link);
+ link.click();
+ document.body.removeChild(link);
+
+ URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
